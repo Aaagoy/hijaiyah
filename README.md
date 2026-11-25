@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hijaiyah
 
-## Getting Started
+Website gratis untuk belajar membaca huruf hijaiyah, harakat, dan tanwin secara bertahap.
+User mendengar contoh, membaca lewat mikrofon, dan bacaannya diperiksa **langsung di browser**
+(suara tidak pernah dikirim atau disimpan). Proyek Tugas Akhir.
 
-First, run the development server:
+- Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · ESLint · Vitest
+- Supabase: Auth (email + password), Postgres (konten, progres, XP, riwayat percobaan), Storage (audio contoh)
+- Pengenal suara: [`@tilawa/core`](https://github.com/yazinsai/tilawa) + `onnxruntime-web` di Web Worker
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Desain: [`docs/superpowers/specs/2026-11-25-hijaiyah-mvp-design.md`](docs/superpowers/specs/2026-11-25-hijaiyah-mvp-design.md)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Menjalankan
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Install:** `npm install`
+2. **Model suara** (±66 MB, tidak di-commit): `npm run model:download`
+3. **Supabase**
+   - Buat project di supabase.com.
+   - Buka *SQL Editor*, jalankan isi `supabase/migrations/0001_init.sql`.
+   - *Authentication → URL Configuration*: isi *Site URL* (mis. `http://localhost:3000`) dan tambahkan
+     `http://localhost:3000/auth/confirm` (serta URL produksi) ke *Redirect URLs*.
+   - Salin `.env.example` menjadi `.env.local`, lalu isi URL, anon key, dan service role key.
+4. **Isi konten:** `npm run seed` (cek dulu dengan `npm run seed -- --dry-run`)
+5. **Jalankan:** `npm run dev`, lalu buka http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Audio contoh
 
-## Learn More
+Rekam satu file per item ke `content/audio/<kunci-item>.<ext>` (mp3/m4a/wav/webm/ogg), lalu jalankan
+`npm run seed` lagi. Daftar lengkap (252 item) ada di [`content/audio/README.md`](content/audio/README.md);
+buat ulang dengan `npm run audio:checklist`. Item tanpa audio tetap bisa dilatih.
 
-To learn more about Next.js, take a look at the following resources:
+## Cara pengecekan bacaan
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Rekaman mikrofon → mono 16 kHz → fitur fbank → model Zipformer (`@tilawa/core`) → log-probabilitas fonem per frame.
+Tiap item punya fonem target dan daftar kandidat bacaan salah (harakat lain, versi tanwin/tanpa tanwin, huruf yang
+bentuknya mirip). Skor tiap kandidat = (log-likelihood paksa − log-likelihood bebas) / jumlah token
+(`src/lib/recognition/scoring.ts`). Bacaan benar jika target menang dan skornya ≥ `ACCEPT_SCORE` (awal: −3).
+Transkrip tebakan bebas ikut disimpan di tabel `attempts` untuk analisis.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Belum disetel dengan suara asli.** Rekam beberapa pembaca, lihat kolom `score` di `attempts`, lalu sesuaikan
+`ACCEPT_SCORE`.
 
-## Deploy on Vercel
+## Skrip
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` / `build` / `start` | Next.js (otomatis menyalin file WASM onnxruntime ke `public/ort/`) |
+| `npm test` | Unit test (termasuk tes model asli bila `public/models/` ada, dan tes SQL via PGlite) |
+| `npm run lint` | ESLint |
+| `npm run model:download` | Unduh model Zipformer |
+| `npm run seed` | Upsert level/sub-level/item + upload audio ke Supabase |
+| `npm run audio:checklist` | Tulis ulang daftar rekaman |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Lisensi model
+
+Kode: bebas digunakan. Model dan corpus Tilawa berlisensi **NPL-1.2 (non-komersial, share-alike)**,
+jadi aman untuk web gratis ini; jangan dipakai untuk produk berbayar tanpa izin pemiliknya.

@@ -1,69 +1,76 @@
-import Image from "next/image";
+import Link from "next/link";
+import { btn } from "@/components/ui";
+import { buildCurriculum } from "@/lib/content/curriculum";
+
+const STEPS = [
+  { icon: "🔊", title: "Dengar", text: "Dengarkan contoh bacaan setiap huruf dan harakat." },
+  { icon: "🎤", title: "Baca", text: "Baca dengan suaramu sendiri lewat mikrofon." },
+  { icon: "✅", title: "Cek langsung", text: "Langsung tahu benar atau salah, lengkap dengan cara baca yang benar." },
+];
 
 export default function Home() {
+  const levels = buildCurriculum();
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="flex-1">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+        <span className="flex items-center gap-1.5 text-brand-600">
+          <span className="font-arabic text-3xl leading-none">ب</span>
+          <span className="text-xl font-extrabold">Hijaiyah</span>
+        </span>
+        <Link href="/masuk" className="font-bold text-brand-600">Masuk</Link>
+      </nav>
+
+      <section className="mx-auto grid max-w-5xl items-center gap-8 px-4 py-10 md:grid-cols-2 md:py-16">
+        <div>
+          <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">Belajar membaca huruf hijaiyah, selangkah demi selangkah.</h1>
+          <p className="mt-4 text-lg text-slate-600">
+            Mulai dari mengenal huruf, harakat, sampai tanwin. Dengarkan contohnya, baca dengan suaramu, dan bacaanmu langsung
+            diperiksa. Gratis.
           </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/daftar" className={btn.primary}>Mulai belajar gratis</Link>
+            <Link href="/masuk" className={btn.secondary}>Saya sudah punya akun</Link>
+          </div>
+          <p className="mt-4 text-sm text-slate-500">🔒 Suaramu diperiksa di perangkatmu sendiri dan tidak pernah dikirim atau disimpan.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="rounded-3xl border-2 border-slate-200 bg-white p-6 text-center shadow-[0_6px_0_#e2e8f0]">
+          <p dir="rtl" className="font-arabic text-7xl leading-[1.5] text-slate-800">بَ بِ بُ</p>
+          <p className="mt-2 font-bold text-slate-500">ba · bi · bu</p>
+          <div className="mt-4 rounded-2xl border-2 border-brand-500 bg-brand-50 p-3 text-left text-brand-700">
+            <p className="font-extrabold">✅ Benar! ⭐⭐⭐</p>
+            <p className="text-sm">Kamu membaca &quot;ba&quot; dengan tepat. +30 XP</p>
+          </div>
         </div>
-      </main>
-    </div>
+      </section>
+
+      <section className="bg-white py-12">
+        <div className="mx-auto grid max-w-5xl gap-4 px-4 sm:grid-cols-3">
+          {STEPS.map((s) => (
+            <div key={s.title} className="rounded-2xl border-2 border-slate-200 p-5">
+              <p className="text-3xl">{s.icon}</p>
+              <h2 className="mt-2 text-lg font-extrabold">{s.title}</h2>
+              <p className="text-slate-600">{s.text}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-4 py-12">
+        <h2 className="text-2xl font-extrabold">Materi</h2>
+        <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {levels.map((l) => (
+            <li key={l.key} className={`rounded-2xl border-2 p-4 ${l.comingSoon ? "border-dashed border-slate-300 text-slate-400" : "border-slate-200 bg-white"}`}>
+              <p className="text-sm font-bold text-slate-500">Level {l.order}{l.comingSoon && " · Segera hadir"}</p>
+              <p className="font-extrabold">{l.title}</p>
+              <p className="text-sm">{l.description}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <footer className="border-t-2 border-slate-200 py-6 text-center text-sm text-slate-500">
+        Hijaiyah · Proyek Tugas Akhir · Pengenal suara: model Tilawa (lisensi NPL-1.2, non-komersial)
+      </footer>
+    </main>
   );
 }
