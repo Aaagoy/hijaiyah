@@ -10,7 +10,9 @@
     "test": "vitest run",
     "model:download": "node scripts/download-model.mjs",
     "predev": "node scripts/copy-ort.mjs",
-    "prebuild": "node scripts/copy-ort.mjs"
+    "prebuild": "node scripts/copy-ort.mjs",
+    "seed": "tsx scripts/seed.ts",
+    "audio:checklist": "tsx scripts/audio-checklist.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
