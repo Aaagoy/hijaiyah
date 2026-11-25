@@ -32,6 +32,8 @@ interface Props {
 
 type Mode = "menu" | "belajar" | "ujian";
 
+const SAVE_ERROR = "Hasil belum tersimpan. Periksa koneksi internet lalu coba lagi.";
+
 const targetOf = (item: PracticeItem): Candidate => ({ key: item.key, phonemes: item.phonemes, latin: item.latin });
 
 function log(item: PracticeItem, mode: "belajar" | "ujian", attemptNo: number, r: RecognitionResult) {
@@ -134,6 +136,7 @@ function LearnMode({ items, sublevel, reading, onExit, onExam }: { items: Practi
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const tries = useRef<Record<string, number>>({});
   const item = items[index];
+  const busy = reading.phase !== "idle";
   const go = (to: number) => {
     setIndex(to);
     setFeedback(null);
@@ -164,11 +167,11 @@ function LearnMode({ items, sublevel, reading, onExit, onExam }: { items: Practi
       {reading.error && <p className="text-center text-sm text-red-600">{reading.error}</p>}
       {feedback && <FeedbackPanel feedback={feedback} />}
       <div className="mt-auto grid grid-cols-2 gap-3">
-        <button type="button" className={btn.secondary} disabled={index === 0} onClick={() => go(index - 1)}>← Sebelumnya</button>
+        <button type="button" className={btn.secondary} disabled={index === 0 || busy} onClick={() => go(index - 1)}>← Sebelumnya</button>
         {index < items.length - 1 ? (
-          <button type="button" className={btn.secondary} onClick={() => go(index + 1)}>Berikutnya →</button>
+          <button type="button" className={btn.secondary} disabled={busy} onClick={() => go(index + 1)}>Berikutnya →</button>
         ) : (
-          <button type="button" className={btn.primary} onClick={onExam}>Mulai ujian</button>
+          <button type="button" className={btn.primary} disabled={busy} onClick={onExam}>Mulai ujian</button>
         )}
       </div>
     </>
@@ -178,7 +181,7 @@ function LearnMode({ items, sublevel, reading, onExit, onExam }: { items: Practi
 function ExamMode({ items, sublevel, reading, nextHref, onExit }: { items: PracticeItem[]; sublevel: Props["sublevel"]; reading: Reading; nextHref: string | null; onExit: () => void }) {
   const byId = new Map(items.map((i) => [i.id, i]));
   const [state, dispatch] = useReducer(examReducer, items, (list) => initialExam(shuffle(list.map((i) => i.id))));
-  const [result, setResult] = useState<FinishResult | null>(null);
+  const [result, setResult] = useState<Extract<FinishResult, { ok: true }> | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const saving = useRef(false);
 
@@ -187,9 +190,11 @@ function ExamMode({ items, sublevel, reading, nextHref, onExit }: { items: Pract
     saving.current = true;
     setSaveError(null);
     try {
-      setResult(await finishSublevel(sublevel.id, itemStars));
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Gagal menyimpan hasil.");
+      const saved = await finishSublevel(sublevel.id, itemStars);
+      if (saved.ok) setResult(saved);
+      else setSaveError(SAVE_ERROR);
+    } catch {
+      setSaveError(SAVE_ERROR);
     } finally {
       saving.current = false;
     }

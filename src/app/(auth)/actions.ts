@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { signupOutcome, translateAuthError as translate } from "@/lib/auth/signup-result";
 import { hasErrors, validateSignup, type SignupErrors } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,14 +14,6 @@ export interface AuthState {
 }
 
 const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim();
-
-function translate(message: string): string {
-  if (/already registered/i.test(message)) return "Email ini sudah terdaftar. Silakan masuk.";
-  if (/invalid login credentials/i.test(message)) return "Email atau password salah.";
-  if (/email not confirmed/i.test(message)) return "Email belum dikonfirmasi. Cek kotak masuk email kamu.";
-  if (/rate limit/i.test(message)) return "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.";
-  return "Terjadi kesalahan. Coba lagi sebentar lagi.";
-}
 
 export async function signUp(_prev: AuthState, form: FormData): Promise<AuthState> {
   const input = {
@@ -43,8 +36,10 @@ export async function signUp(_prev: AuthState, form: FormData): Promise<AuthStat
     password: input.password,
     options: { data: { username: input.username }, emailRedirectTo: `${origin}/auth/confirm` },
   });
-  if (error) return { message: translate(error.message), values };
-  if (!data.session) {
+  const outcome = signupOutcome(data, error);
+  if (outcome.kind === "username-taken") return { errors: { username: "Username sudah dipakai. Pilih yang lain." }, values };
+  if (outcome.kind === "error") return { message: outcome.message, values };
+  if (outcome.kind === "confirm") {
     return { success: "Pendaftaran berhasil! Cek email kamu dan klik tautan konfirmasi, lalu masuk.", values };
   }
   redirect("/belajar");

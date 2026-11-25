@@ -65,3 +65,32 @@ describe("fetchWithCache", () => {
     expect(cache.store.size).toBe(0);
   });
 });
+
+describe("fetchWithCache when Cache Storage misbehaves", () => {
+  it("still returns the model when storing it fails (quota)", async () => {
+    const cache: CacheLike = {
+      match: async () => undefined,
+      put: async () => {
+        throw new DOMException("full", "QuotaExceededError");
+      },
+    };
+    const buf = await fetchWithCache("/m.onnx", cache, async () => streamResponse([new Uint8Array([5])]), () => {});
+    expect(Array.from(new Uint8Array(buf))).toEqual([5]);
+  });
+
+  it("downloads when there is no cache at all", async () => {
+    const buf = await fetchWithCache("/m.onnx", null, async () => streamResponse([new Uint8Array([6])]), () => {});
+    expect(Array.from(new Uint8Array(buf))).toEqual([6]);
+  });
+
+  it("downloads when reading the cache throws", async () => {
+    const cache: CacheLike = {
+      match: async () => {
+        throw new Error("broken");
+      },
+      put: async () => {},
+    };
+    const buf = await fetchWithCache("/m.onnx", cache, async () => streamResponse([new Uint8Array([7])]), () => {});
+    expect(Array.from(new Uint8Array(buf))).toEqual([7]);
+  });
+});

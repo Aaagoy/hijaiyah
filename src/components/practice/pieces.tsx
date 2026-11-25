@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { btn } from "@/components/ui";
 import type { Feedback } from "@/lib/practice/feedback";
+import { audioFor } from "./audio-player";
 import type { MicPhase } from "./use-reading-check";
 
 export function ListenButton({ url, label = "Dengar contoh" }: { url: string | null; label?: string }) {
@@ -13,7 +14,7 @@ export function ListenButton({ url, label = "Dengar contoh" }: { url: string | n
       type="button"
       className={`${btn.secondary} w-full`}
       onClick={() => {
-        audio.current ??= new Audio(url);
+        audio.current = audioFor(audio.current, url, (u) => new Audio(u));
         audio.current.currentTime = 0;
         void audio.current.play();
       }}
@@ -25,7 +26,7 @@ export function ListenButton({ url, label = "Dengar contoh" }: { url: string | n
 
 export function MicButton({ phase, disabled, onStart, onStop }: { phase: MicPhase; disabled?: boolean; onStart: () => void; onStop: () => void }) {
   const recording = phase === "recording";
-  const checking = phase === "checking";
+  const checking = phase === "checking" || phase === "starting";
   return (
     <div className="flex flex-col items-center gap-2">
       <button
@@ -40,7 +41,7 @@ export function MicButton({ phase, disabled, onStart, onStop }: { phase: MicPhas
         {checking ? <span className="h-7 w-7 animate-spin rounded-full border-4 border-white/40 border-t-white" /> : recording ? "■" : "🎤"}
       </button>
       <span className="text-sm font-semibold text-slate-500">
-        {checking ? "Memeriksa bacaan…" : recording ? "Membaca… tekan untuk selesai" : "Tekan lalu baca"}
+        {phase === "starting" ? "Menyiapkan mikrofon…" : checking ? "Memeriksa bacaan…" : recording ? "Membaca… tekan untuk selesai" : "Tekan lalu baca"}
       </span>
     </div>
   );

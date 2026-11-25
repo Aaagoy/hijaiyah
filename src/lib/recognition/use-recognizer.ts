@@ -38,7 +38,14 @@ class RecognizerClient {
     if (!this.worker) {
       this.worker = new Worker(new URL("./recognizer.worker.ts", import.meta.url), { type: "module" });
       this.worker.onmessage = (e: MessageEvent<WorkerResponse>) => this.onMessage(e.data);
-      this.worker.onerror = () => this.set({ state: "error", error: "Pengenal suara gagal dijalankan di browser ini." });
+      this.worker.onerror = () => {
+        // A crashed worker cannot be reused: drop it so "Coba lagi" starts a fresh one.
+        this.worker?.terminate();
+        this.worker = null;
+        this.pending.forEach((p) => p.reject(new Error("worker crashed")));
+        this.pending.clear();
+        this.set({ state: "error", error: "Pengenal suara berhenti bekerja di browser ini." });
+      };
     }
     this.set({ state: "loading", progress: 0, error: null });
     this.send({ type: "load" });
@@ -67,7 +74,8 @@ class RecognizerClient {
       this.pending.get(msg.id)?.reject(new Error(msg.message));
       this.pending.delete(msg.id);
     } else {
-      this.set({ state: "error", error: `Model gagal dimuat: ${msg.message}` });
+      console.error("model load failed:", msg.message);
+      this.set({ state: "error", error: "Periksa koneksi internet lalu coba lagi." });
     }
   }
 }

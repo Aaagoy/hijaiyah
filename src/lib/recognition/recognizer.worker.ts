@@ -13,7 +13,7 @@ let engine: Promise<RecognitionEngine> | null = null;
 const post = (msg: WorkerResponse) => self.postMessage(msg);
 
 async function loadEngine(): Promise<RecognitionEngine> {
-  const cache = await caches.open(MODEL_CACHE_NAME);
+  const cache = await caches.open(MODEL_CACHE_NAME).catch(() => null);
   const model = await fetchWithCache(MODEL_URL, cache, fetch, (loaded, total) =>
     post({ type: "progress", loaded, total }),
   );

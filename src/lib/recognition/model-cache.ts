@@ -8,15 +8,16 @@ export interface CacheLike {
 
 /**
  * Return the file from the cache, or download it (reporting progress) and cache it.
- * Only a fully downloaded file is ever stored.
+ * Only a fully downloaded file is ever stored; cache failures fall back to a plain download.
  */
 export async function fetchWithCache(
   url: string,
-  cache: CacheLike,
+  cache: CacheLike | null,
   fetcher: typeof fetch,
   onProgress: (loaded: number, total: number) => void,
 ): Promise<ArrayBuffer> {
-  const cached = await cache.match(url);
+  // Caching is best effort: private browsing or a full disk must not block learning.
+  const cached = await cache?.match(url).catch(() => undefined);
   if (cached) return cached.arrayBuffer();
 
   const res = await fetcher(url);
@@ -38,6 +39,8 @@ export async function fetchWithCache(
     bytes.set(c, at);
     at += c.length;
   }
-  await cache.put(url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } }));
+  await cache
+    ?.put(url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } }))
+    .catch(() => {});
   return bytes.buffer;
 }

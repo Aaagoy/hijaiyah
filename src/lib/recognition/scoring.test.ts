@@ -63,3 +63,25 @@ describe("scoreCandidates", () => {
     expect(v.status).not.toBe("correct");
   });
 });
+
+/** Posteriors where every frame confidently emits some unrelated token (background noise / TV). */
+function noisyPosteriors(frames: number): { post: FramePosteriors; frames: number } {
+  const rows = new Float32Array(frames * VOCAB_SIZE);
+  const low = Math.log(0.1 / (VOCAB_SIZE - 1));
+  for (let t = 0; t < frames; t++) {
+    const id = 100 + (t % 20);
+    for (let c = 0; c < VOCAB_SIZE; c++) rows[t * VOCAB_SIZE + c] = c === id ? Math.log(0.9) : low;
+  }
+  const post = new FramePosteriors(VOCAB_SIZE, 1000);
+  post.push(rows, frames, 0);
+  return { post, frames };
+}
+
+describe("scoreCandidates on noise", () => {
+  it("never claims a specific wrong reading for unrelated noise", () => {
+    const { post, frames } = noisyPosteriors(40);
+    const v = scoreCandidates(post, frames, ba, others);
+    expect(v.status).not.toBe("correct");
+    if (v.status === "wrong") expect(v.heardKey).toBeNull();
+  });
+});

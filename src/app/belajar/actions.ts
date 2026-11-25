@@ -28,17 +28,14 @@ export async function recordAttempt(input: AttemptInput): Promise<void> {
   if (error) console.error("recordAttempt:", error.message);
 }
 
-export interface FinishResult {
-  xpGained: number;
-  totalXp: number;
-  sublevelStars: number;
-}
+export type FinishResult = { ok: true; xpGained: number; totalXp: number; sublevelStars: number } | { ok: false };
 
+/** Errors are returned as values: thrown server-action messages are hidden in production builds. */
 export async function finishSublevel(sublevelId: string, itemStars: Record<string, number>): Promise<FinishResult> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .rpc("complete_sublevel", { p_sublevel_id: sublevelId, p_item_stars: itemStars })
     .single<{ xp_gained: number; total_xp: number; sublevel_stars: number }>();
-  if (error || !data) throw new Error("Gagal menyimpan hasil. Periksa koneksi lalu coba lagi.");
-  return { xpGained: data.xp_gained, totalXp: data.total_xp, sublevelStars: data.sublevel_stars };
+  if (error || !data) return { ok: false };
+  return { ok: true, xpGained: data.xp_gained, totalXp: data.total_xp, sublevelStars: data.sublevel_stars };
 }

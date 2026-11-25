@@ -19,8 +19,18 @@ export function useRecorder() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  /** Stops any recording and releases the microphone without decoding. */
+  const cancel = useCallback(() => {
+    const recorder = recorderRef.current;
+    recorderRef.current = null;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+    recorder?.stream.getTracks().forEach((t) => t.stop());
+    setRecording(false);
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
+    cancel();
     if (typeof window === "undefined" || !window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       setError("Mikrofon hanya bisa dipakai lewat koneksi aman (HTTPS).");
       throw new Error("insecure");
@@ -44,7 +54,7 @@ export function useRecorder() {
     recorder.start();
     recorderRef.current = recorder;
     setRecording(true);
-  }, []);
+  }, [cancel]);
 
   const stop = useCallback(async (): Promise<Float32Array> => {
     const recorder = recorderRef.current;
@@ -56,6 +66,8 @@ export function useRecorder() {
     recorder.stream.getTracks().forEach((t) => t.stop());
     setRecording(false);
     const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
+    // Stopped before any audio arrived: treat as silence.
+    if (blob.size === 0) return new Float32Array(0);
     const ctx = new AudioContext();
     try {
       const audio = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -66,5 +78,5 @@ export function useRecorder() {
     }
   }, []);
 
-  return { recording, error, start, stop };
+  return { recording, error, start, stop, cancel };
 }
