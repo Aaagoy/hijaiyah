@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useReducer, useRef, useState } from "react";
-import { finishSublevel, recordAttempt, type FinishResult } from "@/app/belajar/actions";
+import { recordAttempt, saveItemResult } from "@/app/belajar/actions";
 import { Stars } from "@/components/sublevel-card";
 import { btn } from "@/components/ui";
 import type { Candidate } from "@/lib/content/curriculum";
 import { starsForAttempts } from "@/lib/game/progression";
 import { feedbackFor, type Feedback } from "@/lib/practice/feedback";
+import { examItemIds, summarizeSaves, type ItemSave } from "@/lib/practice/resume";
 import { examReducer, initialExam } from "@/lib/practice/session-state";
 import type { RecognitionResult } from "@/lib/recognition/engine";
 import { FeedbackPanel, ListenButton, MicButton, ModelGate } from "./pieces";
@@ -27,6 +28,8 @@ export interface PracticeItem {
 interface Props {
   sublevel: { id: string; title: string; levelTitle: string; completed: boolean };
   items: PracticeItem[];
+  /** Items already read correctly in an earlier exam run. */
+  doneIds: string[];
   nextHref: string | null;
 }
 
@@ -84,7 +87,7 @@ function BigLetter({ arabic, latin }: { arabic: string; latin?: string }) {
   );
 }
 
-export function PracticeSession({ sublevel, items, nextHref }: Props) {
+export function PracticeSession({ sublevel, items, doneIds, nextHref }: Props) {
   const [mode, setMode] = useState<Mode>("menu");
   const reading = useReadingCheck();
   const shell = "mx-auto flex w-full max-w-xl flex-1 flex-col gap-5 px-4 py-4 sm:py-8";
@@ -111,7 +114,7 @@ export function PracticeSession({ sublevel, items, nextHref }: Props) {
           <span className="text-sm font-normal text-slate-500">Dengar contoh dan coba baca, tanpa nilai</span>
         </button>
         <button type="button" className={btn.primary} onClick={() => setMode("ujian")}>
-          🎯 {sublevel.completed ? "Ulangi ujian" : "Mulai ujian"}
+          🎯 {sublevel.completed ? "Ulangi ujian" : doneIds.length > 0 ? `Lanjutkan ujian (${doneIds.length}/${items.length})` : "Mulai ujian"}
         </button>
         <Link href="/belajar" className="text-center font-semibold text-slate-500 hover:text-slate-700">Kembali ke daftar</Link>
       </main>
@@ -123,7 +126,7 @@ export function PracticeSession({ sublevel, items, nextHref }: Props) {
       {mode === "belajar" ? (
         <LearnMode items={items} sublevel={sublevel} reading={reading} onExit={() => setMode("menu")} onExam={() => setMode("ujian")} />
       ) : (
-        <ExamMode items={items} sublevel={sublevel} reading={reading} nextHref={nextHref} onExit={() => setMode("menu")} />
+        <ExamMode items={items} doneIds={doneIds} sublevel={sublevel} reading={reading} nextHref={nextHref} onExit={() => setMode("menu")} />
       )}
     </main>
   );
@@ -178,32 +181,37 @@ function LearnMode({ items, sublevel, reading, onExit, onExam }: { items: Practi
   );
 }
 
-function ExamMode({ items, sublevel, reading, nextHref, onExit }: { items: PracticeItem[]; sublevel: Props["sublevel"]; reading: Reading; nextHref: string | null; onExit: () => void }) {
+function ExamMode({ items, doneIds, sublevel, reading, nextHref, onExit }: { items: PracticeItem[]; doneIds: string[]; sublevel: Props["sublevel"]; reading: Reading; nextHref: string | null; onExit: () => void }) {
   const byId = new Map(items.map((i) => [i.id, i]));
-  const [state, dispatch] = useReducer(examReducer, items, (list) => initialExam(shuffle(list.map((i) => i.id))));
-  const [result, setResult] = useState<Extract<FinishResult, { ok: true }> | null>(null);
+  const [state, dispatch] = useReducer(examReducer, null, () =>
+    initialExam(shuffle(examItemIds(items.map((i) => i.id), new Set(doneIds), sublevel.completed))),
+  );
+  const [result, setResult] = useState<Extract<ItemSave, { ok: true }> | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  /** One save per item read correctly, sent right away so leaving early keeps the progress. */
+  const saves = useRef(new Map<string, Promise<ItemSave>>());
   const saving = useRef(false);
+  const alreadyDone = items.length - state.order.length;
 
-  const save = async (itemStars: Record<string, number>) => {
+  const saveItem = (itemId: string, stars: number) => {
+    saves.current.set(itemId, saveItemResult(itemId, stars).catch((): ItemSave => ({ ok: false })));
+  };
+
+  const collect = async (itemStars: Record<string, number>, retry: boolean) => {
     if (saving.current) return;
     saving.current = true;
     setSaveError(null);
-    try {
-      const saved = await finishSublevel(sublevel.id, itemStars);
-      if (saved.ok) setResult(saved);
-      else setSaveError(SAVE_ERROR);
-    } catch {
-      setSaveError(SAVE_ERROR);
-    } finally {
-      saving.current = false;
-    }
+    if (retry) for (const [id, stars] of Object.entries(itemStars)) saveItem(id, stars);
+    const summary = summarizeSaves(await Promise.all(saves.current.values()));
+    if (summary.ok) setResult(summary);
+    else setSaveError(SAVE_ERROR);
+    saving.current = false;
   };
 
   const onContinue = () => {
     const next = examReducer(state, { type: "continue" });
     dispatch({ type: "continue" });
-    if (next.finished) void save(next.itemStars);
+    if (next.finished) void collect(next.itemStars, false);
   };
 
   if (state.finished) {
@@ -214,14 +222,14 @@ function ExamMode({ items, sublevel, reading, nextHref, onExit }: { items: Pract
         <h1 className="text-3xl font-extrabold">Bagian selesai!</h1>
         {result ? (
           <>
-            <Stars count={result.sublevelStars} className="text-4xl" />
+            <Stars count={result.sublevelStars ?? 0} className="text-4xl" />
             <p className="text-lg font-bold text-brand-600">+{result.xpGained} XP</p>
             {result.xpGained === 0 && <p className="text-sm text-slate-500">XP hanya bertambah kalau bintangmu lebih baik dari sebelumnya.</p>}
           </>
         ) : saveError ? (
           <div className="rounded-2xl bg-red-50 p-4 text-red-700">
             <p>{saveError}</p>
-            <button type="button" className={`${btn.primary} mt-3`} onClick={() => void save(state.itemStars)}>Simpan lagi</button>
+            <button type="button" className={`${btn.primary} mt-3`} onClick={() => void collect(state.itemStars, true)}>Simpan lagi</button>
           </div>
         ) : (
           <p className="text-slate-500">Menyimpan hasil… ({total.length} item)</p>
@@ -243,13 +251,15 @@ function ExamMode({ items, sublevel, reading, nextHref, onExit }: { items: Pract
   const answer = async () => {
     const r = await reading.check(targetOf(item), item.candidates);
     if (!r) return;
-    log(item, "ujian", attemptsSoFar + (r.status === "silent" ? 0 : 1), r);
+    const attemptNo = attemptsSoFar + (r.status === "silent" ? 0 : 1);
+    log(item, "ujian", attemptNo, r);
+    if (r.status === "correct") saveItem(item.id, starsForAttempts(attemptNo));
     dispatch({ type: "verdict", status: r.status, heardKey: r.heardKey });
   };
 
   return (
     <>
-      <TopBar title={`Ujian · ${sublevel.title}`} sub="" progress={(doneCount / items.length) * 100} onClose={onExit} />
+      <TopBar title={`Ujian · ${sublevel.title}`} sub="" progress={((alreadyDone + doneCount) / items.length) * 100} onClose={onExit} />
       <div className="rounded-3xl border-2 border-slate-200 bg-white p-5">
         <p className="text-center text-sm font-bold text-slate-500">Baca huruf ini</p>
         <BigLetter arabic={item.arabic} />

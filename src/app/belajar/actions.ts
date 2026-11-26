@@ -1,5 +1,6 @@
 "use server";
 
+import type { ItemSave } from "@/lib/practice/resume";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AttemptInput {
@@ -28,14 +29,24 @@ export async function recordAttempt(input: AttemptInput): Promise<void> {
   if (error) console.error("recordAttempt:", error.message);
 }
 
-export type FinishResult = { ok: true; xpGained: number; totalXp: number; sublevelStars: number } | { ok: false };
-
-/** Errors are returned as values: thrown server-action messages are hidden in production builds. */
-export async function finishSublevel(sublevelId: string, itemStars: Record<string, number>): Promise<FinishResult> {
+/**
+ * Save one item read correctly in the exam (best stars kept, XP for improvements only).
+ * Errors are returned as values: thrown server-action messages are hidden in production builds.
+ */
+export async function saveItemResult(itemId: string, stars: number): Promise<ItemSave> {
   const supabase = await createClient();
   const { data, error } = await supabase
-    .rpc("complete_sublevel", { p_sublevel_id: sublevelId, p_item_stars: itemStars })
-    .single<{ xp_gained: number; total_xp: number; sublevel_stars: number }>();
-  if (error || !data) return { ok: false };
-  return { ok: true, xpGained: data.xp_gained, totalXp: data.total_xp, sublevelStars: data.sublevel_stars };
+    .rpc("record_item", { p_item_id: itemId, p_stars: stars })
+    .single<{ xp_gained: number; total_xp: number; sublevel_completed: boolean; sublevel_stars: number | null }>();
+  if (error || !data) {
+    if (error) console.error("record_item failed:", error.message);
+    return { ok: false };
+  }
+  return {
+    ok: true,
+    xpGained: data.xp_gained,
+    totalXp: data.total_xp,
+    sublevelCompleted: data.sublevel_completed,
+    sublevelStars: data.sublevel_stars,
+  };
 }

@@ -1,8 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { supabaseEnv } from "./env";
 
 export async function createClient() {
+  // Supabase checks token expiry with Date.now(); render per request so prerendering never reaches it.
+  await connection();
   const cookieStore = await cookies();
   const { url, anonKey } = supabaseEnv();
   return createServerClient(url, anonKey, {

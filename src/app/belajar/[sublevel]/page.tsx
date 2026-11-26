@@ -35,12 +35,17 @@ export default async function SublevelPage({ params }: PageProps<"/belajar/[subl
     candidates: row.candidates as Candidate[],
     audioUrl: row.audio_path ? supabase.storage.from("audio").getPublicUrl(row.audio_path).data.publicUrl : null,
   }));
+  const { data: progress } = await supabase
+    .from("item_progress")
+    .select("item_id")
+    .in("item_id", items.map((i) => i.id));
   const next = all[index + 1];
 
   return (
     <PracticeSession
       sublevel={{ id: sub.id, title: sub.title, levelTitle: sub.levelTitle, completed: sub.completed }}
       items={items}
+      doneIds={(progress ?? []).map((p) => p.item_id)}
       nextHref={next ? `/belajar/${next.key}` : null}
     />
   );

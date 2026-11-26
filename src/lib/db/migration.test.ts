@@ -109,3 +109,60 @@ describe("0001_init migration", () => {
     ).rejects.toThrow(/missing stars/);
   });
 });
+
+describe("record_item (progress saved per item)", () => {
+  let subId: string;
+  let ids: string[];
+  const record = async (itemId: string, stars: number) =>
+    (
+      await db.query<{ xp_gained: number; total_xp: number; sublevel_completed: boolean; sublevel_stars: number | null }>(
+        "select * from public.record_item($1, $2)",
+        [itemId, stars],
+      )
+    ).rows[0];
+
+  beforeAll(async () => {
+    const level = await db.query<{ id: string }>("insert into public.levels (key, ord, title) values ('fathah', 2, 'Fathah') returning id");
+    const sub = await db.query<{ id: string }>(
+      "insert into public.sublevels (level_id, key, ord, title) values ($1, 'fathah-1', 1, 'x') returning id",
+      [level.rows[0].id],
+    );
+    subId = sub.rows[0].id;
+    ids = [];
+    for (const [i, key] of ["fathah-alif", "fathah-ba", "fathah-ta"].entries()) {
+      const item = await db.query<{ id: string }>(
+        "insert into public.items (sublevel_id, key, ord, arabic, latin, phonemes, explanation) values ($1, $2, $3, 'x', 'x', 'x', 'x') returning id",
+        [subId, key, i + 1],
+      );
+      ids.push(item.rows[0].id);
+    }
+  });
+
+  const xp = async () => (await db.query<{ xp: number }>("select xp from public.profiles")).rows[0].xp;
+  const subRow = async () =>
+    (await db.query<{ best_stars: number }>("select best_stars from public.sublevel_progress where sublevel_id = $1", [subId])).rows[0];
+
+  it("saves a single correct item and its XP immediately", async () => {
+    const before = await xp();
+    expect(await record(ids[0], 3)).toEqual({ xp_gained: 30, total_xp: before + 30, sublevel_completed: false, sublevel_stars: null });
+    expect(await subRow()).toBeUndefined();
+  });
+
+  it("keeps the best stars per item and awards only improvements", async () => {
+    const before = await xp();
+    expect((await record(ids[0], 1)).xp_gained).toBe(0);
+    expect(await xp()).toBe(before);
+  });
+
+  it("completes the sublevel once every item is saved, using best stars", async () => {
+    await record(ids[1], 2);
+    const last = await record(ids[2], 2);
+    expect(last.sublevel_completed).toBe(true);
+    expect(last.sublevel_stars).toBe(2); // floor((3 + 2 + 2) / 3)
+    expect((await subRow()).best_stars).toBe(2);
+  });
+
+  it("rejects an unknown item", async () => {
+    await expect(record("00000000-0000-0000-0000-000000000000", 3)).rejects.toThrow(/unknown item/);
+  });
+});
