@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOut } from "@/app/(auth)/actions";
 import { levelForXp } from "@/lib/game/progression";
 import type { Profile } from "@/lib/progress/queries";
 
@@ -29,6 +30,16 @@ export function AppHeader({ profile }: { profile: Profile }) {
             <span aria-hidden>👤</span>
             <span className="max-w-24 truncate sm:max-w-40">{profile.username}</span>
           </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="rounded-full border-2 border-slate-200 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-red-50 hover:text-red-700"
+              aria-label="Keluar dari akun"
+            >
+              <span aria-hidden className="sm:hidden">⎋</span>
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
+          </form>
         </div>
       </div>
     </header>

@@ -1,4 +1,4 @@
-import { encodePhonemes, forcedLogLik, freeLogLik, type FramePosteriors } from "@tilawa/core";
+import { BLANK_ID, encodePhonemes, forcedLogLik, freeLogLik, type FramePosteriors } from "@tilawa/core";
 import type { Candidate } from "@/lib/content/curriculum";
 
 export const SILENCE_KEY = "__silence__";
@@ -21,17 +21,63 @@ export interface Verdict {
 }
 
 interface Fit {
-  /** forced − free over the whole clip: comparable across candidates of any length (including silence). */
+  /** Whole-clip score used to rank candidates (comparable across lengths, including silence). */
   total: number;
-  /** total per token: how well each token fits, used for the acceptance threshold. */
+  /** How well each token of the reading fits, ignoring extra sounds around it: the acceptance test. */
   perToken: number;
 }
 
+/**
+ * Cost of one extra sound frame (outside the reading) when ranking candidates. Without it a
+ * candidate that is part of a longer one (بَ inside بَن) would tie and an added tanwin would be missed.
+ */
+const EXTRA_SOUND_PENALTY = 1;
+
+/**
+ * Best CTC path that emits exactly `ids` somewhere in [from, to), with any frames before and
+ * after it explained freely by their best token ("extra sounds": breath, room noise, a hesitation).
+ * Every extra frame whose best token is not blank costs `penalty`.
+ */
+export function spottedLogLik(post: FramePosteriors, ids: readonly number[], from: number, to: number, penalty: number): number {
+  const L = ids.length;
+  const S = 2 * L + 1;
+  if (L === 0 || to - from < L) return L === 0 ? forcedLogLik(post, ids, from, to) : -Infinity;
+  const ext = new Int32Array(S);
+  for (let s = 0; s < S; s++) ext[s] = s % 2 === 1 ? ids[(s - 1) >> 1] : BLANK_ID;
+  const extra = (t: number) => post.bestLogp(t) - (post.argmax(t) === BLANK_ID ? 0 : penalty);
+
+  let before = extra(from);
+  let after = -Infinity;
+  let prev = new Float64Array(S).fill(-Infinity);
+  let next = new Float64Array(S);
+  prev[0] = post.logp(from, ext[0]);
+  prev[1] = post.logp(from, ext[1]);
+  for (let t = from + 1; t < to; t++) {
+    const done = Math.max(prev[S - 1], prev[S - 2]);
+    for (let s = 0; s < S; s++) {
+      let m = prev[s];
+      if (s >= 1 && prev[s - 1] > m) m = prev[s - 1];
+      if (s >= 2 && ext[s] !== BLANK_ID && ext[s] !== ext[s - 2] && prev[s - 2] > m) m = prev[s - 2];
+      if (s <= 1 && before > m) m = before;
+      next[s] = m === -Infinity ? -Infinity : m + post.logp(t, ext[s]);
+    }
+    after = Math.max(after, done) + extra(t);
+    before += extra(t);
+    [prev, next] = [next, prev];
+  }
+  return Math.max(after, prev[S - 1], prev[S - 2]);
+}
+
 function fit(post: FramePosteriors, frames: number, phonemes: string, free: number): Fit {
-  const ids = phonemes ? encodePhonemes(phonemes) : [];
+  if (!phonemes) {
+    const total = forcedLogLik(post, [], 0, frames) - free;
+    return { total, perToken: total };
+  }
+  const ids = encodePhonemes(phonemes);
   if (!ids) return { total: -Infinity, perToken: -Infinity };
-  const total = forcedLogLik(post, ids, 0, frames) - free;
-  return { total, perToken: total / Math.max(1, ids.length) };
+  const total = spottedLogLik(post, ids, 0, frames, EXTRA_SOUND_PENALTY) - free;
+  const perToken = (spottedLogLik(post, ids, 0, frames, 0) - free) / ids.length;
+  return { total, perToken };
 }
 
 /**

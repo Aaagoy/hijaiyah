@@ -108,3 +108,30 @@ describe("scoreCandidates when the microphone picked up speech", () => {
     expect(v.heardKey).toBe("ba-i");
   });
 });
+
+/** Posteriors for a sequence of phoneme strings read one after another (junk + reading + junk). */
+function posteriorsForSeq(parts: string[]): { post: FramePosteriors; frames: number } {
+  return posteriorsFor(parts.join(""));
+}
+
+describe("scoreCandidates with extra sounds around the reading", () => {
+  it("accepts a correct reading even when unrelated sounds were picked up before and after it", () => {
+    const { post, frames } = posteriorsForSeq(["لَذِۦۦهَ", "بَ", "مِدَ"]);
+    const v = scoreCandidates(post, frames, ba, others, { speechDetected: true });
+    expect(v.status).toBe("correct");
+  });
+
+  it("still reports the wrong vowel when it is surrounded by extra sounds", () => {
+    const { post, frames } = posteriorsForSeq(["لَذِ", "بِ", "مِدَ"]);
+    const v = scoreCandidates(post, frames, ba, others, { speechDetected: true });
+    expect(v.status).toBe("wrong");
+    expect(v.heardKey).toBe("ba-i");
+  });
+
+  it("detects an added tanwin instead of hiding it as an extra sound", () => {
+    const { post, frames } = posteriorsFor("بَن");
+    const v = scoreCandidates(post, frames, ba, others, { speechDetected: true });
+    expect(v.status).toBe("wrong");
+    expect(v.heardKey).toBe("ba-an");
+  });
+});
