@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { beforeAll, describe, expect, it } from "vitest";
 
 /** Minimal stand-ins for the Supabase-provided auth and storage schemas. */
 const SUPABASE_STUBS = `
-  create role anon; create role authenticated;
+  create role anon; create role authenticated; create role service_role;
   create schema auth;
   create table auth.users (id uuid primary key, raw_user_meta_data jsonb);
   create function auth.uid() returns uuid language sql stable as
@@ -30,7 +30,9 @@ async function complete(stars: number[]) {
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(SUPABASE_STUBS);
-  await db.exec(readFileSync("supabase/migrations/0001_init.sql", "utf8"));
+  for (const file of readdirSync("supabase/migrations").sort()) {
+    await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
+  }
   await db.exec(`select set_config('test.uid', '${USER}', false)`);
   await db.query("insert into auth.users (id, raw_user_meta_data) values ($1, $2)", [USER, { username: "Ahmad_23" }]);
   const level = await db.query<{ id: string }>("insert into public.levels (key, ord, title) values ('huruf', 1, 'Huruf') returning id");
@@ -47,6 +49,33 @@ beforeAll(async () => {
     );
     itemIds.push(item.rows[0].id);
   }
+});
+
+describe("table privileges (new Supabase projects grant nothing by default)", () => {
+  const can = async (role: string, table: string, priv: string) =>
+    (await db.query<{ ok: boolean }>("select has_table_privilege($1, $2, $3) as ok", [role, table, priv])).rows[0].ok;
+
+  it("lets visitors read the level list for the landing page", async () => {
+    expect(await can("anon", "public.levels", "select")).toBe(true);
+  });
+  it("lets signed-in users read content and their progress", async () => {
+    for (const t of ["levels", "sublevels", "items", "profiles", "item_progress", "sublevel_progress", "attempts"]) {
+      expect(await can("authenticated", `public.${t}`, "select"), t).toBe(true);
+    }
+  });
+  it("lets signed-in users log attempts but not write progress or XP directly", async () => {
+    expect(await can("authenticated", "public.attempts", "insert")).toBe(true);
+    expect(await can("authenticated", "public.profiles", "update")).toBe(false);
+    expect(await can("authenticated", "public.item_progress", "insert")).toBe(false);
+  });
+  it("lets the seed script (service role) write content", async () => {
+    for (const t of ["levels", "sublevels", "items"]) {
+      expect(await can("service_role", `public.${t}`, "insert"), t).toBe(true);
+    }
+  });
+  it("keeps content hidden from visitors", async () => {
+    expect(await can("anon", "public.items", "select")).toBe(false);
+  });
 });
 
 describe("0001_init migration", () => {

@@ -16,7 +16,7 @@ Desain: [`docs/superpowers/specs/2026-11-25-hijaiyah-mvp-design.md`](docs/superp
 2. **Model suara** (±66 MB, tidak di-commit): `npm run model:download`
 3. **Supabase**
    - Buat project di supabase.com.
-   - Buka *SQL Editor*, jalankan isi `supabase/migrations/0001_init.sql`.
+   - Buka *SQL Editor*, jalankan isi `supabase/migrations/0001_init.sql`, lalu `0002_grants.sql` (berurutan).
    - *Authentication → URL Configuration*: isi *Site URL* (mis. `http://localhost:3000`) dan tambahkan
      `http://localhost:3000/auth/confirm` (serta URL produksi) ke *Redirect URLs*.
    - Salin `.env.example` menjadi `.env.local`, lalu isi URL, anon key, dan service role key.
