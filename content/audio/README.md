@@ -5,7 +5,9 @@ misalnya `fathah-ba.m4a`, lalu jalankan `npm run seed`. Item tanpa file menampil
 
 Tips: rekam di ruangan sepi, satu item per file, beri jeda sekitar 0,3 detik sebelum dan sesudah bacaan.
 
-## Daftar item (252)
+Level campuran tidak perlu direkam: itemnya otomatis memakai rekaman bacaan yang sama dari level sebelumnya.
+
+## Daftar rekaman (196)
 
 ### 1. Huruf Hijaiyah
 
@@ -131,37 +133,6 @@ Tips: rekam di ruangan sepi, satu item per file, beri jeda sekitar 0,3 detik seb
 - [ ] `dhammah-ha` — هُ (hu)
 - [ ] `dhammah-ya` — يُ (yu)
 
-### 5. Campuran Harakat
-
-- [ ] `campuran-harakat-alif` — أَ (a)
-- [ ] `campuran-harakat-ba` — بِ (bi)
-- [ ] `campuran-harakat-ta` — تُ (tu)
-- [ ] `campuran-harakat-tsa` — ثَ (tsa)
-- [ ] `campuran-harakat-jim` — جِ (ji)
-- [ ] `campuran-harakat-hha` — حُ (ḥu)
-- [ ] `campuran-harakat-kho` — خَ (kha)
-- [ ] `campuran-harakat-dal` — دِ (di)
-- [ ] `campuran-harakat-dzal` — ذُ (dzu)
-- [ ] `campuran-harakat-ro` — رَ (ra)
-- [ ] `campuran-harakat-zai` — زِ (zi)
-- [ ] `campuran-harakat-sin` — سُ (su)
-- [ ] `campuran-harakat-syin` — شَ (sya)
-- [ ] `campuran-harakat-shod` — صِ (shi)
-- [ ] `campuran-harakat-dhod` — ضُ (dhu)
-- [ ] `campuran-harakat-tho` — طَ (tha)
-- [ ] `campuran-harakat-zho` — ظِ (zhi)
-- [ ] `campuran-harakat-ain` — عُ ('u)
-- [ ] `campuran-harakat-ghoin` — غَ (gha)
-- [ ] `campuran-harakat-fa` — فِ (fi)
-- [ ] `campuran-harakat-qof` — قُ (qu)
-- [ ] `campuran-harakat-kaf` — كَ (ka)
-- [ ] `campuran-harakat-lam` — لِ (li)
-- [ ] `campuran-harakat-mim` — مُ (mu)
-- [ ] `campuran-harakat-nun` — نَ (na)
-- [ ] `campuran-harakat-wau` — وِ (wi)
-- [ ] `campuran-harakat-ha` — هُ (hu)
-- [ ] `campuran-harakat-ya` — يَ (ya)
-
 ### 6. Fathatain
 
 - [ ] `fathatain-alif` — أً (an)
@@ -254,34 +225,3 @@ Tips: rekam di ruangan sepi, satu item per file, beri jeda sekitar 0,3 detik seb
 - [ ] `dhammatain-wau` — وٌ (wun)
 - [ ] `dhammatain-ha` — هٌ (hun)
 - [ ] `dhammatain-ya` — يٌ (yun)
-
-### 9. Campuran Tanwin
-
-- [ ] `campuran-tanwin-alif` — أً (an)
-- [ ] `campuran-tanwin-ba` — بٍ (bin)
-- [ ] `campuran-tanwin-ta` — تٌ (tun)
-- [ ] `campuran-tanwin-tsa` — ثً (tsan)
-- [ ] `campuran-tanwin-jim` — جٍ (jin)
-- [ ] `campuran-tanwin-hha` — حٌ (ḥun)
-- [ ] `campuran-tanwin-kho` — خً (khan)
-- [ ] `campuran-tanwin-dal` — دٍ (din)
-- [ ] `campuran-tanwin-dzal` — ذٌ (dzun)
-- [ ] `campuran-tanwin-ro` — رً (ran)
-- [ ] `campuran-tanwin-zai` — زٍ (zin)
-- [ ] `campuran-tanwin-sin` — سٌ (sun)
-- [ ] `campuran-tanwin-syin` — شً (syan)
-- [ ] `campuran-tanwin-shod` — صٍ (shin)
-- [ ] `campuran-tanwin-dhod` — ضٌ (dhun)
-- [ ] `campuran-tanwin-tho` — طً (than)
-- [ ] `campuran-tanwin-zho` — ظٍ (zhin)
-- [ ] `campuran-tanwin-ain` — عٌ ('un)
-- [ ] `campuran-tanwin-ghoin` — غً (ghan)
-- [ ] `campuran-tanwin-fa` — فٍ (fin)
-- [ ] `campuran-tanwin-qof` — قٌ (qun)
-- [ ] `campuran-tanwin-kaf` — كً (kan)
-- [ ] `campuran-tanwin-lam` — لٍ (lin)
-- [ ] `campuran-tanwin-mim` — مٌ (mun)
-- [ ] `campuran-tanwin-nun` — نً (nan)
-- [ ] `campuran-tanwin-wau` — وٍ (win)
-- [ ] `campuran-tanwin-ha` — هٌ (hun)
-- [ ] `campuran-tanwin-ya` — يً (yan)

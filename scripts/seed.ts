@@ -32,7 +32,7 @@ async function main() {
   loadEnvFile(".env.local");
   const audio = findAudio();
   const rows = toRows(buildCurriculum(), audio);
-  console.log(`levels=${rows.levels.length} sublevels=${rows.sublevels.length} items=${rows.items.length} audio=${audio.size}`);
+  console.log(`levels=${rows.levels.length} sublevels=${rows.sublevels.length} items=${rows.items.length} audio files=${audio.size} items with audio=${rows.items.filter((i) => i.audio_path).length}`);
   if (process.argv.includes("--dry-run")) return;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

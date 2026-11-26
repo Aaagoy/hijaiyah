@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildCurriculum } from "./curriculum";
-import { AUDIO_EXTENSIONS, toRows } from "./to-rows";
+import { AUDIO_EXTENSIONS, recordingKeys, toRows } from "./to-rows";
 
 describe("toRows", () => {
   const levels = buildCurriculum();
@@ -24,6 +24,23 @@ describe("toRows", () => {
     const rows = toRows(levels, new Map([["fathah-ba", "m4a"]]));
     expect(rows.items.find((i) => i.key === "fathah-ba")!.audio_path).toBe("items/fathah-ba.m4a");
     expect(rows.items.find((i) => i.key === "fathah-ta")!.audio_path).toBeNull();
+  });
+
+  it("lets an item without its own file reuse the recording of the same reading", () => {
+    const rows = toRows(levels, new Map([["fathah-alif", "mp3"]]));
+    expect(rows.items.find((i) => i.key === "campuran-harakat-alif")!.audio_path).toBe("items/fathah-alif.mp3");
+  });
+
+  it("prefers an item's own recording over a shared one", () => {
+    const rows = toRows(levels, new Map([["fathah-alif", "mp3"], ["campuran-harakat-alif", "m4a"]]));
+    expect(rows.items.find((i) => i.key === "campuran-harakat-alif")!.audio_path).toBe("items/campuran-harakat-alif.m4a");
+  });
+
+  it("asks for one recording per distinct reading", () => {
+    const keys = recordingKeys(levels);
+    expect(keys.size).toBe(196);
+    expect(keys.has("fathah-alif")).toBe(true);
+    expect(keys.has("campuran-harakat-alif")).toBe(false);
   });
 
   it("accepts common recording formats", () => {
