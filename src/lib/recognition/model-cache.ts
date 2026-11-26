@@ -1,4 +1,5 @@
-export const MODEL_URL = "/models/zipformer_a0w_ep1_a05.int8.onnx";
+/** Served from public/ by default; set NEXT_PUBLIC_MODEL_URL to load it from elsewhere (it must allow CORS). */
+export const MODEL_URL = process.env.NEXT_PUBLIC_MODEL_URL || "/models/zipformer_a0w_ep1_a05.int8.onnx";
 export const MODEL_CACHE_NAME = "hijaiyah-model-v1";
 
 export interface CacheLike {

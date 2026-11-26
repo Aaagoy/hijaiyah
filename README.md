@@ -23,6 +23,20 @@ Desain: [`docs/superpowers/specs/2026-11-25-hijaiyah-mvp-design.md`](docs/superp
 4. **Isi konten:** `npm run seed` (cek dulu dengan `npm run seed -- --dry-run`)
 5. **Jalankan:** `npm run dev`, lalu buka http://localhost:3000
 
+## Deploy ke Vercel
+
+Mikrofon di browser hanya jalan lewat HTTPS, jadi untuk mencoba di HP web-nya perlu di-deploy.
+
+1. Di vercel.com, *Add New → Project*, impor repo GitHub ini (framework terdeteksi otomatis: Next.js).
+2. Isi *Environment Variables*: `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   (service role key **tidak** perlu di Vercel).
+3. Deploy. Saat build, `prebuild` menyalin runtime WASM dan mengunduh model ke `public/models/`.
+4. Tambahkan URL Vercel (mis. `https://hijaiyah.vercel.app`) dan `https://hijaiyah.vercel.app/auth/confirm`
+   ke *Supabase → Authentication → URL Configuration* (Site URL dan Redirect URLs).
+
+Jika hosting menolak file model yang besar, unggah model ke host lain yang mengizinkan CORS dan isi
+`NEXT_PUBLIC_MODEL_URL`.
+
 ## Audio contoh
 
 Rekam satu file per item ke `content/audio/<kunci-item>.<ext>` (mp3/m4a/wav/webm/ogg), lalu jalankan
