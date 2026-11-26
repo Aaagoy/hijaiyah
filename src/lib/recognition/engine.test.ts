@@ -16,6 +16,14 @@ describe.skipIf(!existsSync(MODEL))("RecognitionEngine (real model)", () => {
     expect(result.transcript).toBe("");
   });
 
+  it("never answers 'tidak terdengar' when the microphone clearly picked up sound", async () => {
+    const engine = await RecognitionEngine.create(ort, readFileSync(MODEL));
+    const pcm = new Float32Array(16000 * 2);
+    for (let i = 16000 * 0.7; i < 16000 * 1.1; i++) pcm[i] = Math.sin((2 * Math.PI * 180 * i) / 16000) * 0.3;
+    const result = await engine.recognize(pcm, { key: "ba-a", phonemes: "بَ", latin: "ba" }, [{ key: "ba-i", phonemes: "بِ", latin: "bi" }]);
+    expect(result.status).not.toBe("silent");
+  });
+
   it("can be called twice (state resets between recordings)", async () => {
     const engine = await RecognitionEngine.create(ort, readFileSync(MODEL));
     const pcm = new Float32Array(16000);

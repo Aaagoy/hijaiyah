@@ -39,15 +39,30 @@ function fit(post: FramePosteriors, frames: number, phonemes: string, free: numb
  * Candidates are ranked on the whole-clip score so silence and longer readings compete fairly;
  * a winner whose tokens fit poorly (below ACCEPT_SCORE) is never named as what the user said.
  */
-export function scoreCandidates(post: FramePosteriors, frames: number, target: Candidate, others: Candidate[]): Verdict {
+export interface ScoreOptions {
+  /**
+   * The audio itself contains speech (energy-based detection). CTC output is mostly blank even
+   * for real speech, so the model-side "silence" reading is too cheap to trust then: it is excluded.
+   */
+  speechDetected?: boolean;
+}
+
+export function scoreCandidates(
+  post: FramePosteriors,
+  frames: number,
+  target: Candidate,
+  others: Candidate[],
+  options: ScoreOptions = {},
+): Verdict {
   const free = freeLogLik(post, 0, frames);
   const fits = new Map<string, Fit>([[SILENCE_KEY, fit(post, frames, "", free)]]);
   for (const c of [target, ...others]) fits.set(c.key, fit(post, frames, c.phonemes, free));
   const scores = Object.fromEntries([...fits].map(([k, v]) => [k, v.perToken]));
   const targetScore = fits.get(target.key)!.perToken;
 
-  let bestKey = SILENCE_KEY;
+  let bestKey = options.speechDetected ? target.key : SILENCE_KEY;
   for (const [key, value] of fits) {
+    if (options.speechDetected && key === SILENCE_KEY) continue;
     if (value.total > fits.get(bestKey)!.total) bestKey = key;
   }
 

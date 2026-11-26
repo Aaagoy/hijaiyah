@@ -85,3 +85,26 @@ describe("scoreCandidates on noise", () => {
     if (v.status === "wrong") expect(v.heardKey).toBeNull();
   });
 });
+
+describe("scoreCandidates when the microphone picked up speech", () => {
+  it("does not call a short real reading 'silent' just because CTC output is mostly blank", () => {
+    // A single short spike of the target inside a long blank stretch: silence is cheap here.
+    const ids = encodePhonemes("بَ")!;
+    const path = [...Array(20).fill(BLANK_ID), ids[0], ...Array(20).fill(BLANK_ID)];
+    const rows = new Float32Array(path.length * VOCAB_SIZE);
+    path.forEach((id, t) => {
+      for (let c = 0; c < VOCAB_SIZE; c++) rows[t * VOCAB_SIZE + c] = Math.log(c === id && id !== BLANK_ID ? 0.45 : c === BLANK_ID ? (id === BLANK_ID ? 0.99 : 0.54) : 0.01 / (VOCAB_SIZE - 2));
+    });
+    const post = new FramePosteriors(VOCAB_SIZE, 1000);
+    post.push(rows, path.length, 0);
+    expect(scoreCandidates(post, path.length, ba, others).status).toBe("silent");
+    expect(scoreCandidates(post, path.length, ba, others, { speechDetected: true }).status).toBe("correct");
+  });
+
+  it("still reports the wrong vowel when speech was detected", () => {
+    const { post, frames } = posteriorsFor("بِ");
+    const v = scoreCandidates(post, frames, ba, others, { speechDetected: true });
+    expect(v.status).toBe("wrong");
+    expect(v.heardKey).toBe("ba-i");
+  });
+});
