@@ -27,7 +27,10 @@ export async function signUp(_prev: AuthState, form: FormData): Promise<AuthStat
 
   const supabase = await createClient();
   const { data: available, error: rpcError } = await supabase.rpc("username_available", { p_username: input.username });
-  if (rpcError) return { message: translate(rpcError.message), values };
+  if (rpcError) {
+    console.error("username_available failed:", rpcError.message);
+    return { message: translate(rpcError.message), values };
+  }
   if (!available) return { errors: { username: "Username sudah dipakai. Pilih yang lain." }, values };
 
   const origin = (await headers()).get("origin") ?? "";

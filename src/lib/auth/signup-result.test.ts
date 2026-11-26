@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { signupOutcome } from "./signup-result";
+import { signupOutcome, translateAuthError } from "./signup-result";
 
 describe("signupOutcome", () => {
   it("logs in directly when a session is returned", () => {
@@ -24,5 +24,24 @@ describe("signupOutcome", () => {
       kind: "error",
       message: "Terjadi kesalahan. Coba lagi sebentar lagi.",
     });
+  });
+});
+
+describe("translateAuthError", () => {
+  it("explains a password rejected by the project's password policy", () => {
+    expect(translateAuthError("Password should be at least 6 characters.")).toMatch(/Password/);
+    expect(translateAuthError("Password is known to be weak and easy to guess, please choose a different one.")).toMatch(/Password/);
+  });
+  it("explains an email address Supabase rejects", () => {
+    expect(translateAuthError('Email address "a@b.c" is invalid')).toMatch(/email/i);
+  });
+  it("explains a confirmation email that could not be sent", () => {
+    expect(translateAuthError("Error sending confirmation email")).toMatch(/email konfirmasi/i);
+  });
+  it("explains the email rate limit", () => {
+    expect(translateAuthError("email rate limit exceeded")).toMatch(/Terlalu banyak/);
+  });
+  it("explains disabled signups", () => {
+    expect(translateAuthError("Signups not allowed for this instance")).toMatch(/ditutup/);
   });
 });
