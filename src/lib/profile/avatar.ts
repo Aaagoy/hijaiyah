@@ -46,3 +46,8 @@ export function checkImageFile(file: { type: string; size: number }): string | u
   if (file.size > MAX_INPUT_BYTES) return "Ukuran foto maksimal 5 MB.";
   return undefined;
 }
+
+/** Public URL of a file in the avatars bucket. */
+export function avatarUrl(path: string): string {
+  return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${AVATAR_BUCKET}/${path}`;
+}

@@ -7,6 +7,8 @@ export interface Profile {
   id: string;
   username: string;
   xp: number;
+  /** 'huruf:<key>', 'foto:<path>' or null (default letter). */
+  avatar: string | null;
 }
 
 /** The signed-in user's profile; redirects to /masuk when there is none. */
@@ -15,7 +17,7 @@ export async function requireProfile(): Promise<Profile> {
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub as string | undefined;
   if (!userId) redirect("/masuk");
-  const { data } = await supabase.from("profiles").select("id, username, xp").eq("id", userId).single();
+  const { data } = await supabase.from("profiles").select("id, username, xp, avatar").eq("id", userId).single();
   if (!data) redirect("/masuk");
   return data;
 }
