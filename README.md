@@ -16,7 +16,8 @@ Desain: [`docs/superpowers/specs/2026-11-25-hijaiyah-mvp-design.md`](docs/superp
 2. **Model suara** (±66 MB, tidak di-commit): `npm run model:download`
 3. **Supabase**
    - Buat project di supabase.com.
-   - Buka *SQL Editor*, jalankan isi `supabase/migrations/0001_init.sql`, `0002_grants.sql`, `0003_record_item.sql`, `0004_profile_edit.sql`, lalu `0005_username_spaces.sql` (berurutan).
+   - Buka *SQL Editor*, jalankan isi `supabase/migrations/0001_init.sql`, `0002_grants.sql`, `0003_record_item.sql`, `0004_profile_edit.sql`, `0005_username_spaces.sql`, lalu `0006_tester_flag.sql` (berurutan).
+   - Akun testing (semua level terbuka): `update public.profiles set is_tester = true where username = 'tester';`
    - *Authentication → URL Configuration*: isi *Site URL* (mis. `http://localhost:3000`) dan tambahkan
      `http://localhost:3000/auth/confirm` (serta URL produksi) ke *Redirect URLs*.
    - Salin `.env.example` menjadi `.env.local`, lalu isi URL, anon key, dan service role key.

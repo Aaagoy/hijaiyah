@@ -250,3 +250,15 @@ describe("0005 usernames with spaces", () => {
     expect(row.rows[0].username).toBe("siti aisyah");
   });
 });
+
+describe("0006 tester flag", () => {
+  it("is off for new users", async () => {
+    const row = await db.query<{ is_tester: boolean }>("select is_tester from public.profiles where id = $1", [USER]);
+    expect(row.rows[0].is_tester).toBe(false);
+  });
+
+  it("cannot be switched on by signed-in users themselves", async () => {
+    const can = await db.query<{ ok: boolean }>("select has_column_privilege('authenticated', 'public.profiles', 'is_tester', 'update') as ok");
+    expect(can.rows[0].ok).toBe(false);
+  });
+});

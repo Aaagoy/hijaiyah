@@ -22,6 +22,8 @@ export interface HomeInput {
   items: { id: string; sublevel_id: string }[];
   itemProgress: { item_id: string; best_stars: number }[];
   sublevelProgress: { sublevel_id: string; best_stars: number }[];
+  /** Test account: every available sub-level is open. */
+  unlockAll?: boolean;
 }
 
 export interface HomeSublevel {
@@ -67,6 +69,7 @@ export function buildHomeModel(input: HomeInput): HomeLevel[] {
 
   const unlocked = computeUnlocked(
     subs.map((s) => ({ id: s.id, completed: subStars.has(s.id), levelComingSoon: Boolean(comingSoon.get(s.level_id)) })),
+    input.unlockAll,
   );
 
   return levels.map((level) => {

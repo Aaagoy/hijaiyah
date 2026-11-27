@@ -23,4 +23,8 @@ describe("computeUnlocked", () => {
   it("never unlocks coming-soon sublevels", () => {
     expect([...computeUnlocked([s("a", true), s("x", false, true)])]).toEqual(["a"]);
   });
+
+  it("unlocks every available sublevel for a test account, but still not coming-soon ones", () => {
+    expect([...computeUnlocked([s("a"), s("b"), s("c", true), s("x", false, true)], true)]).toEqual(["a", "b", "c"]);
+  });
 });

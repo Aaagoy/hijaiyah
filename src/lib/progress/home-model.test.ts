@@ -50,3 +50,12 @@ describe("buildHomeModel", () => {
     expect(model[0].completedCount).toBe(1);
   });
 });
+
+describe("buildHomeModel for a test account", () => {
+  const model = buildHomeModel({ ...input, unlockAll: true });
+
+  it("opens every sublevel while keeping real progress", () => {
+    expect(model[1].sublevels[0]).toMatchObject({ locked: false, completed: false, stars: 0 });
+    expect(model[0].sublevels[0]).toMatchObject({ completed: true, stars: 2 });
+  });
+});
