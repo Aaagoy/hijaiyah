@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { USERNAME_RULE, normalizeUsername, validateUsername } from "@/lib/auth/validation";
+import { defaultLetterKey } from "@/lib/profile/avatar";
 import { createClient } from "@/lib/supabase/server";
 
 export interface UsernameState {
@@ -10,12 +11,29 @@ export interface UsernameState {
   message?: string;
 }
 
+/**
+ * The default letter avatar is derived from the username, so renaming would change it.
+ * Before a rename, store that letter explicitly so the picture stays the same.
+ */
+async function keepDefaultAvatar(supabase: Awaited<ReturnType<typeof createClient>>) {
+  // RLS only returns the caller's own profile row.
+  const { data, error } = await supabase.from("profiles").select("username, avatar").maybeSingle();
+  if (error || !data) {
+    if (error) console.error("profile lookup before rename failed:", error.message);
+    return;
+  }
+  if (data.avatar) return;
+  const { error: pinError } = await supabase.rpc("set_avatar", { p_avatar: `huruf:${defaultLetterKey(data.username)}` });
+  if (pinError) console.error("keeping default avatar failed:", pinError.message);
+}
+
 export async function updateUsername(_prev: UsernameState, form: FormData): Promise<UsernameState> {
   const value = normalizeUsername(String(form.get("username") ?? ""));
   const invalid = validateUsername(value);
   if (invalid) return { value, message: invalid };
 
   const supabase = await createClient();
+  await keepDefaultAvatar(supabase);
   const { data, error } = await supabase.rpc("update_username", { p_username: value });
   if (error) {
     if (error.message.includes("username_taken")) return { value, message: "Username sudah dipakai. Coba yang lain." };

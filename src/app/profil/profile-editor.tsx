@@ -5,7 +5,7 @@ import { AvatarBadge } from "@/components/avatar-badge";
 import { btn, field } from "@/components/ui";
 import { USERNAME_HINT } from "@/lib/auth/validation";
 import { LETTERS } from "@/lib/content/letters";
-import { AVATAR_BUCKET, avatarUrl, checkImageFile, photoPath, resolveAvatar } from "@/lib/profile/avatar";
+import { AVATAR_BUCKET, avatarUrl, checkImageFile, defaultLetterKey, photoPath, resolveAvatar } from "@/lib/profile/avatar";
 import { resizeToSquare } from "@/lib/profile/resize-image";
 import { createClient } from "@/lib/supabase/client";
 import { chooseAvatar, updateUsername, type UsernameState } from "./actions";
@@ -17,7 +17,8 @@ interface Props {
 }
 
 export function ProfileEditor({ userId, username, avatar: initialAvatar }: Props) {
-  const [avatar, setAvatar] = useState(initialAvatar);
+  // No chosen avatar yet: pin the default letter now so a rename does not change the picture.
+  const [avatar, setAvatar] = useState(initialAvatar ?? `huruf:${defaultLetterKey(username)}`);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<{ tone: "info" | "error" | "ok"; text: string } | null>(null);
   const [busy, startBusy] = useTransition();
