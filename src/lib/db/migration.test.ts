@@ -10,7 +10,11 @@ const SUPABASE_STUBS = `
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('test.uid', true), '')::uuid $$;
   create schema storage;
-  create table storage.buckets (id text primary key, name text, public boolean);
+  create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
+  create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text, owner uuid);
+  create function storage.foldername(name text) returns text[] language sql immutable as
+    $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
+  alter table storage.objects enable row level security;
 `;
 
 const USER = "11111111-1111-1111-1111-111111111111";
@@ -164,5 +168,64 @@ describe("record_item (progress saved per item)", () => {
 
   it("rejects an unknown item", async () => {
     await expect(record("00000000-0000-0000-0000-000000000000", 3)).rejects.toThrow(/unknown item/);
+  });
+});
+
+describe("0004 profile edit", () => {
+  const OTHER = "22222222-2222-2222-2222-222222222222";
+  const avatar = async () =>
+    (await db.query<{ avatar: string | null }>("select avatar from public.profiles where id = $1", [USER])).rows[0].avatar;
+  const rename = (name: string) => db.query<{ update_username: string }>("select public.update_username($1)", [name]);
+  const setAvatar = (value: string) => db.query("select public.set_avatar($1)", [value]);
+
+  beforeAll(async () => {
+    await db.query("insert into auth.users (id, raw_user_meta_data) values ($1, $2)", [OTHER, { username: "budi" }]);
+  });
+
+  it("starts without a chosen avatar", async () => {
+    expect(await avatar()).toBeNull();
+  });
+
+  it("renames to a lower-cased username", async () => {
+    expect((await rename("Ahmad_Baru")).rows[0].update_username).toBe("ahmad_baru");
+  });
+
+  it("accepts saving the user's own current username again", async () => {
+    expect((await rename("ahmad_baru")).rows[0].update_username).toBe("ahmad_baru");
+  });
+
+  it("rejects a username another user has", async () => {
+    await expect(rename("budi")).rejects.toThrow(/username_taken/);
+  });
+
+  it("rejects an invalid username", async () => {
+    await expect(rename("ab")).rejects.toThrow(/username_invalid/);
+  });
+
+  it("saves a hijaiyah letter avatar", async () => {
+    await setAvatar("huruf:ba");
+    expect(await avatar()).toBe("huruf:ba");
+  });
+
+  it("saves a photo stored in the user's own folder", async () => {
+    await setAvatar(`foto:${USER}/1.webp`);
+    expect(await avatar()).toBe(`foto:${USER}/1.webp`);
+  });
+
+  it("rejects unknown letters and photos in someone else's folder", async () => {
+    await expect(setAvatar("huruf:xx")).rejects.toThrow(/avatar_invalid/);
+    await expect(setAvatar(`foto:${OTHER}/1.webp`)).rejects.toThrow(/avatar_invalid/);
+    await expect(setAvatar(`foto:${USER}/../x.webp`)).rejects.toThrow(/avatar_invalid/);
+  });
+
+  it("still gives signed-in users no direct write access to profiles", async () => {
+    const ok = (await db.query<{ ok: boolean }>("select has_table_privilege('authenticated', 'public.profiles', 'update') as ok")).rows[0].ok;
+    expect(ok).toBe(false);
+  });
+
+  it("creates a public avatars bucket limited to small images", async () => {
+    const b = (await db.query<{ public: boolean; file_size_limit: number }>("select public, file_size_limit from storage.buckets where id = 'avatars'")).rows[0];
+    expect(b.public).toBe(true);
+    expect(Number(b.file_size_limit)).toBe(204800);
   });
 });
