@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/(auth)/actions";
 import { AppHeader } from "@/components/app-header";
+import { AvatarBadge } from "@/components/avatar-badge";
 import { btn } from "@/components/ui";
 import { levelForXp } from "@/lib/game/progression";
+import { avatarUrl, resolveAvatar } from "@/lib/profile/avatar";
 import { loadHome, requireProfile } from "@/lib/progress/queries";
+import { ProfileEditor } from "./profile-editor";
 
 export const metadata: Metadata = { title: "Profil — Hijaiyah" };
 
@@ -27,7 +30,7 @@ export default async function ProfilPage() {
       <AppHeader profile={profile} />
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">
         <div className="flex items-center gap-4">
-          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-3xl">👤</span>
+          <AvatarBadge avatar={resolveAvatar(profile.avatar, profile.username, avatarUrl)} size="lg" />
           <div>
             <h1 className="text-2xl font-extrabold">{profile.username}</h1>
             <p className="text-slate-500">{next - profile.xp} XP lagi menuju level {level + 1}</p>
@@ -41,6 +44,7 @@ export default async function ProfilPage() {
             </div>
           ))}
         </dl>
+        <ProfileEditor userId={profile.id} username={profile.username} avatar={profile.avatar} />
         <h2 className="mt-8 text-lg font-extrabold">Progres per level</h2>
         <ul className="mt-3 space-y-2">
           {levels.filter((l) => !l.comingSoon).map((l) => (

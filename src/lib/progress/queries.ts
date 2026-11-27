@@ -17,9 +17,15 @@ export async function requireProfile(): Promise<Profile> {
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub as string | undefined;
   if (!userId) redirect("/masuk");
-  const { data } = await supabase.from("profiles").select("id, username, xp, avatar").eq("id", userId).single();
-  if (!data) redirect("/masuk");
-  return data;
+  const { data, error } = await supabase.from("profiles").select("id, username, xp, avatar").eq("id", userId).single();
+  if (data) return data;
+  if (error?.message.includes("avatar")) {
+    // Migration 0004 not applied yet: keep the app usable with the default letter avatar.
+    console.error("profiles.avatar missing — run supabase/migrations/0004_profile_edit.sql");
+    const { data: basic } = await supabase.from("profiles").select("id, username, xp").eq("id", userId).single();
+    if (basic) return { ...basic, avatar: null };
+  }
+  redirect("/masuk");
 }
 
 export async function loadHome(): Promise<HomeLevel[]> {

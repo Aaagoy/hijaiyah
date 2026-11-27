@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/app/(auth)/actions";
+import { AvatarBadge } from "@/components/avatar-badge";
 import { levelForXp } from "@/lib/game/progression";
+import { avatarUrl, resolveAvatar } from "@/lib/profile/avatar";
 import type { Profile } from "@/lib/progress/queries";
 
 export function AppHeader({ profile }: { profile: Profile }) {
@@ -25,9 +27,9 @@ export function AppHeader({ profile }: { profile: Profile }) {
           </div>
           <Link
             href="/profil"
-            className="flex items-center gap-2 rounded-full border-2 border-slate-200 px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50"
+            className="flex items-center gap-2 rounded-full border-2 border-slate-200 py-1 pl-1 pr-3 font-bold text-slate-700 hover:bg-slate-50"
           >
-            <span aria-hidden>👤</span>
+            <AvatarBadge avatar={resolveAvatar(profile.avatar, profile.username, avatarUrl)} size="sm" label="" />
             <span className="max-w-24 truncate sm:max-w-40">{profile.username}</span>
           </Link>
           <form action={signOut}>
