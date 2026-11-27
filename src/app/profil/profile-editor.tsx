@@ -3,6 +3,7 @@
 import { useActionState, useRef, useState, useTransition } from "react";
 import { AvatarBadge } from "@/components/avatar-badge";
 import { btn, field } from "@/components/ui";
+import { USERNAME_HINT } from "@/lib/auth/validation";
 import { LETTERS } from "@/lib/content/letters";
 import { AVATAR_BUCKET, avatarUrl, checkImageFile, photoPath, resolveAvatar } from "@/lib/profile/avatar";
 import { resizeToSquare } from "@/lib/profile/resize-image";
@@ -153,7 +154,7 @@ export function ProfileEditor({ userId, username, avatar: initialAvatar }: Props
           </button>
         </div>
         <p id="username-help" className={`mt-1 text-sm ${nameState.message ? (nameState.ok ? "font-semibold text-brand-700" : "font-semibold text-red-600") : "text-slate-500"}`} role="status">
-          {nameState.message ?? "Huruf kecil, angka, dan garis bawah (_), 3–20 karakter."}
+          {nameState.message ?? USERNAME_HINT}
         </p>
       </form>
     </section>

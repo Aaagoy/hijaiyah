@@ -229,3 +229,24 @@ describe("0004 profile edit", () => {
     expect(Number(b.file_size_limit)).toBe(204800);
   });
 });
+
+describe("0005 usernames with spaces", () => {
+  const rename = (name: string) => db.query<{ update_username: string }>("select public.update_username($1)", [name]);
+
+  it("accepts single spaces between words, up to 20 characters", async () => {
+    expect((await rename("Ahmad  Yusuf ")).rows[0].update_username).toBe("ahmad yusuf");
+    expect((await rename("abcdefghi abcdefghij")).rows[0].update_username).toBe("abcdefghi abcdefghij");
+  });
+
+  it("still rejects symbols and names longer than 20 characters", async () => {
+    await expect(rename("ahmad!")).rejects.toThrow(/username_invalid/);
+    await expect(rename("abcdefghij abcdefghij")).rejects.toThrow(/username_invalid/);
+  });
+
+  it("lets new users sign up with a spaced username", async () => {
+    const id = "33333333-3333-3333-3333-333333333333";
+    await db.query("insert into auth.users (id, raw_user_meta_data) values ($1, $2)", [id, { username: "Siti  Aisyah" }]);
+    const row = await db.query<{ username: string }>("select username from public.profiles where id = $1", [id]);
+    expect(row.rows[0].username).toBe("siti aisyah");
+  });
+});

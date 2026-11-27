@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { signupOutcome, translateAuthError as translate } from "@/lib/auth/signup-result";
-import { hasErrors, validateSignup, type SignupErrors } from "@/lib/auth/validation";
+import { hasErrors, normalizeUsername, validateSignup, type SignupErrors } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AuthState {
@@ -17,7 +17,7 @@ const text = (form: FormData, key: string) => String(form.get(key) ?? "").trim()
 
 export async function signUp(_prev: AuthState, form: FormData): Promise<AuthState> {
   const input = {
-    username: text(form, "username"),
+    username: normalizeUsername(text(form, "username")),
     email: text(form, "email"),
     password: String(form.get("password") ?? ""),
   };

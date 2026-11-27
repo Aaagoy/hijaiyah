@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateSignup } from "./validation";
+import { validateSignup, normalizeUsername, validateUsername } from "./validation";
 
 const valid = { username: "ahmad_23", email: "ahmad@contoh.id", password: "rahasia123" };
 
@@ -13,8 +13,19 @@ describe("validateSignup", () => {
   it("rejects a username longer than 20 characters", () => {
     expect(validateSignup({ ...valid, username: "a".repeat(21) }).username).toMatch(/20/);
   });
-  it("rejects spaces and symbols in the username", () => {
+  it("allows single spaces between words in the username", () => {
+    expect(validateUsername("ahmad yusuf 23")).toBeUndefined();
+    expect(validateUsername("a".repeat(9) + " " + "b".repeat(10))).toBeUndefined();
+  });
+  it("rejects symbols in the username", () => {
     expect(validateSignup({ ...valid, username: "ahmad 23!" }).username).toMatch(/huruf kecil/);
+  });
+  it("rejects spaces at the edges or doubled spaces", () => {
+    expect(validateUsername(" ahmad")).toBeDefined();
+    expect(validateUsername("ahmad  yusuf")).toBeDefined();
+  });
+  it("normalizes what the user typed: trims, single spaces, lowercase", () => {
+    expect(normalizeUsername("  Ahmad   Yusuf ")).toBe("ahmad yusuf");
   });
   it("rejects uppercase letters in the username", () => {
     expect(validateSignup({ ...valid, username: "Ahmad" }).username).toMatch(/huruf kecil/);

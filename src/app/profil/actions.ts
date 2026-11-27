@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { validateUsername } from "@/lib/auth/validation";
+import { USERNAME_RULE, normalizeUsername, validateUsername } from "@/lib/auth/validation";
 import { createClient } from "@/lib/supabase/server";
 
 export interface UsernameState {
@@ -11,7 +11,7 @@ export interface UsernameState {
 }
 
 export async function updateUsername(_prev: UsernameState, form: FormData): Promise<UsernameState> {
-  const value = String(form.get("username") ?? "").trim().toLowerCase();
+  const value = normalizeUsername(String(form.get("username") ?? ""));
   const invalid = validateUsername(value);
   if (invalid) return { value, message: invalid };
 
@@ -19,7 +19,7 @@ export async function updateUsername(_prev: UsernameState, form: FormData): Prom
   const { data, error } = await supabase.rpc("update_username", { p_username: value });
   if (error) {
     if (error.message.includes("username_taken")) return { value, message: "Username sudah dipakai. Coba yang lain." };
-    if (error.message.includes("username_invalid")) return { value, message: "Username hanya boleh huruf kecil, angka, dan garis bawah (_), 3–20 karakter." };
+    if (error.message.includes("username_invalid")) return { value, message: USERNAME_RULE };
     console.error("update_username failed:", error.message);
     return { value, message: "Gagal menyimpan username. Coba lagi." };
   }

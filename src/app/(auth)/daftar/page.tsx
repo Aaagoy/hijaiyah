@@ -16,7 +16,7 @@ export default function DaftarPage() {
         <form action={action} className="space-y-4" noValidate>
           <div>
             <label htmlFor="username" className="mb-1 block font-semibold">Username</label>
-            <input id="username" name="username" autoComplete="username" autoCapitalize="none" required defaultValue={state.values?.username} className={field} placeholder="contoh: ahmad_23" />
+            <input id="username" name="username" autoComplete="username" autoCapitalize="none" required defaultValue={state.values?.username} className={field} placeholder="contoh: ahmad yusuf" maxLength={20} />
             <FieldError message={state.errors?.username} />
           </div>
           <div>

@@ -1,3 +1,6 @@
+export const USERNAME_RULE = "Username hanya boleh huruf kecil, angka, garis bawah (_), dan spasi di antara kata.";
+export const USERNAME_HINT = "Huruf kecil, angka, garis bawah (_), dan spasi; 3–20 karakter.";
+
 export interface SignupInput {
   username: string;
   email: string;
@@ -6,10 +9,18 @@ export interface SignupInput {
 
 export type SignupErrors = Record<keyof SignupInput, string | undefined>;
 
+/** Words of lowercase letters, digits or "_", separated by single spaces. */
+const USERNAME_PATTERN = /^[a-z0-9_]+( [a-z0-9_]+)*$/;
+
+/** What we store: trimmed, inner whitespace collapsed to one space, lowercase. */
+export function normalizeUsername(raw: string): string {
+  return raw.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export function validateUsername(username: string): string | undefined {
   if (username.length < 3) return "Username minimal 3 karakter.";
   if (username.length > 20) return "Username maksimal 20 karakter.";
-  if (!/^[a-z0-9_]+$/.test(username)) return "Username hanya boleh huruf kecil, angka, dan garis bawah (_).";
+  if (!USERNAME_PATTERN.test(username)) return USERNAME_RULE;
   return undefined;
 }
 
